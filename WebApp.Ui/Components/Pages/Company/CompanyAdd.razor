@@ -1,0 +1,126 @@
+﻿@* @using Application.Features.Company.Commands.Add
+@using Application.Features.Company.Queries
+@using Application.Services
+@using Core.Extensions
+@using Domain.Enums
+@inherits ModalDialog
+@inject MasterDataService Data
+<ModalDialog EventAction="@EventAction" EventData="EventData" Title="@Title">
+    <BodyContent>
+        <EditForm Model="Model" FormName="CompanyAdd" OnValidSubmit="OnSubmit">
+
+            <div class="modal-body user-select-none">
+                <FluentValidationValidator ValidatorType="typeof(CompanyAddCommandValidation)" />
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Name</label>
+                            <InputText @bind-Value="Model.Name" class="form-control form-control-sm"></InputText>
+                            <ValidationMessage For="() => Model.Name" class="text-danger" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <InputText @bind-Value="Model.Email" class="form-control form-control-sm"></InputText>
+                            <ValidationMessage For="() => Model.Email" class="text-danger" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Phone</label>
+                            <InputText @bind-Value="Model.Phone" class="form-control form-control-sm"></InputText>
+                            <ValidationMessage For="() => Model.Phone" class="text-danger" />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label"> Type </label>
+                            <DropdownSelect @bind-Value="Model.CompanyType" EventDropdown="SeCompanyType"
+                                            DataSource="DropdownCompanyType"
+                                            EmptyText="false"
+                                            Css="form-select form-select-sm" />
+                            <ValidationMessage For="() => Model.CompanyType" class="text-danger" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"> Parent </label>
+                            <DropdownSelect @bind-Value="Model.ParentId"
+                                            DataSource="DropdownCompany"
+                                            EmptyText="true"
+                                            Css="form-select form-select-sm" />
+                            <ValidationMessage For="() => Model.ParentId" class="text-danger" />
+                        </div>
+                        
+                        @if (_currentUserRole == RoleName.SystemAdministrator)
+                        {
+                            <div class="mb-3">
+                                <label class="form-label"> Tenant <small>(system user)</small> </label>
+                                <DropdownSelect @bind-Value="Model.TenantId"
+                                                DataSource="DropdownTenant"
+                                                EmptyText="false"
+                                                Css="form-select form-select-sm" />
+                                <ValidationMessage For="() => Model.TenantId" class="text-danger" />
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer user-select-none">
+                <button type="button" class="btn btn-secondary" @onclick="@OnActionCancel">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+        </EditForm>
+    </BodyContent>
+</ModalDialog>
+
+@code {
+
+
+    [SupplyParameterFromForm]
+    private CompanyAddCommand Model { get; set; } = new();
+    private Dictionary<string, string> DropdownTenant { get; set; } = new();
+    private Dictionary<string, string> DropdownCompany { get; set; } = new();
+    private Dictionary<string, string> DropdownCompanyType { get; set; } = new();
+    private string TenantId { get; set; }
+    private string CompanyId { get; set; }
+    private string _currentUserRole { get; set; }
+
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthState;
+        TenantId = state.User.GetTenantId();
+        CompanyId = state.User.GetCompanyId();
+        _currentUserRole = state.User.GetDefaultRole();
+
+        var companyQuery = await Data.DropdownCompany(_currentUserRole);
+        DropdownCompany = companyQuery.Where(x => x.Key != CompanyId).ToDictionary();
+       
+        DropdownCompanyType = Data.DropdownCompanyType();
+        DropdownTenant = await Data.DropdownTenant();
+
+        Model.CompanyType = CompanyType.HeadOffice;
+        Model.TenantId = TenantId;
+
+    }
+
+    private async Task OnSubmit()
+    {
+        var result = await Mediator.Send(Model);
+        if (result.Succeeded)
+        {
+            await OnActionSubmit();
+            await OnEvent(result.Data);
+            Toast.ShowSuccess($"{ConstantString.CreateSuccess}");
+        }
+    }
+    private void SetParentCompany(string value)
+    {
+        Model.ParentId = value;
+        StateHasChanged();
+    }
+
+    private void SeCompanyType(string value)
+    {
+        Model.CompanyType = value.ToEnum<CompanyType>();
+        StateHasChanged();
+    }
+} *@

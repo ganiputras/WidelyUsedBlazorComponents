@@ -1,0 +1,181 @@
+﻿@* @page "/company"
+@attribute [Authorize(Roles = $"{RoleName.SystemAdministrator},{RoleName.TenantAdmin},{RoleName.Admin}")]
+
+<Breadcrumb Title="Company" Values="Company"></Breadcrumb>
+
+
+<div class="shadow-sm my-2">
+    <div class="accordion" id="accordion1">
+        <div class="accordion-item rounded-0 border-0">
+            <h2 class="accordion-header bg-white">
+                <button class="accordion-button rounded-0 collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse1" aria-expanded="false" aria-controls="collapse1">
+                    Advanced Search
+                </button>
+            </h2>
+            <div id="collapse1" class="accordion-collapse collapse" data-bs-parent="#accordion1">
+                <div class="accordion-body">
+                    <strong>This is the second item's accordion body.</strong> It is hidden by default, until the collapse plugin adds the appropriate classes that we use to style each element. These classes control the overall appearance, as well as the showing and hiding via CSS transitions. You can modify any of this with custom CSS or overriding our default variables. It's also worth noting that just about any HTML can go within the <code>.accordion-body</code>, though the transition does limit overflow.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="shadow-sm">
+    <nav class="navbar bg-body-tertiary">
+        <div class=" col-md-4 container-fluid justify-content-start focus-ring">
+            <input type="search"
+                   class="form-control form-control-sm"
+                   placeholder="Filter Name"
+                   @bind="Filter.Name"
+                   @oninput="QueryName" />
+
+        </div>
+
+        <div class="col-md-8  container-fluid justify-content-end">
+            <button class="btn btn-sm btn-secondary m-1" type="button" @onclick="OnRefresh">
+                <i class="bi bi-repeat"></i> Refresh
+            </button>
+            <button class="btn btn-sm btn-secondary m-1" type="button" @onclick="OnAdd">
+                <i class="bi bi-plus-square"></i> Create
+            </button>
+            <button class="btn btn-sm btn-secondary m-1" type="button" @onclick="OnDeleteAny" disabled="@(SelectedItemsCount == 0)">
+                <i class="bi bi-trash3"></i> Delete
+            </button>
+
+        </div>
+        <div class="col-md-12 container-fluid justify-content-start">
+            <div class=" p-1">
+                Total: @_table.Count() Items
+            </div>
+            @if (SelectedItemsCount > 0)
+            {
+                <div class="mx-2 p-1">
+                    <span class="badge bg-secondary "> @_selectedItems.Count Selected</span>
+                </div>
+            }
+        </div>
+    </nav>
+</div>
+
+<div class="shadow-sm">
+
+    <table class="table table-hover table-sm m-0">
+        <thead class="table-light sticky-top">
+            <tr class="user-select-none">
+                <th class="col-1">
+                    <input @onchange="OnSelectAll"
+                           checked="@IsSelectAll"
+                           class="form-check-input p-2"
+                           type="checkbox"
+                           aria-label="...">
+                    <span class="mx-1">Action</span>
+                </th>
+                <th class="col-3">Name</th>
+                <th>Type</th>
+                <th>Parent</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Tenant</th>
+
+            </tr>
+        </thead>
+        <tbody>
+            <Virtualize Context="item" Items="@_table" SpacerElement="tr" ItemSize="25" OverscanCount="25">
+               
+                <ItemContent>
+                    <tr @key="item" id="row-@item.Id" @onclick="() => OnRowSelected(item)" class="@SetActiveRow(item.Id)">
+                        <td class="col-1 user-select-none">
+                            <div class="btn-group">
+                                <input @onchange="e => OnSelect(item, e)"
+                                       checked="@item.Selected"
+                                       class="form-check-input p-2"
+                                       type="checkbox"
+                                       aria-label="...">
+                                <button type="button" hidden="@(SelectedItemsCount > 1)"
+                                        class="btn dropdown border-0 rounded-0 p-0 px-1"
+                                        data-bs-toggle="dropdown"
+                                        aria-expanded="false"
+                                        aria-label="...">
+                                    <i class="bi bi-gear"></i>
+                                </button>
+
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a @onclick="() => OnEdit(item)" class="dropdown-item btn btn-sm btn-light">
+                                            <i class="bi bi-pencil-square"></i> Edit
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a @onclick="() => OnClone(item)" class="dropdown-item btn btn-sm btn-light">
+                                            <i class="bi bi-copy"></i> Clone
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a @onclick="() => OnDelete(item)" class="dropdown-item btn btn-sm btn-light">
+                                            <i class="bi bi-trash3"></i> Delete
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                        <td class="col-3">@item.Name</td>
+                        <td>@item.CompanyType</td>
+                        <td>@item.Parent?.Name</td>
+                        <td>@item.Email</td>
+                        <td>@item.Phone</td>
+                        <td>@item.TenantId</td>
+                    </tr>
+
+                </ItemContent>
+            </Virtualize>
+        </tbody>
+    </table>
+    @if (!_table.Any())
+    {
+        @if (IsLoading)
+        {
+            <div class="p-3 user-select-none">
+                <div class="spinner-border spinner-border-sm" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                Loading...
+            </div>
+        }
+        else
+        {
+            <div class="p-3">
+                <i class="bi bi-database-fill-check"></i>
+                No data. Please add data first
+            </div>
+        }
+    }
+</div>
+
+@if (OpenDialogAdd)
+{
+    <CompanyAdd Title="Create Company"
+                EventAction="@DialogEvenAction"
+                EventData="DialogEvenData"></CompanyAdd>
+}
+
+@if (OpenDialogClone)
+{
+    <CompanyClone Title="Clone Company" Request="@Model.Id"
+                  EventAction="@DialogEvenAction"
+                  EventData="DialogEvenData"></CompanyClone>
+}
+@if (OpenDialogEdit)
+{
+    <CompanyEdit Title="Edit Company" Request="@Model.Id"
+                 EventAction="@DialogEvenAction"
+                 EventData="DialogEvenData"></CompanyEdit>
+}
+@if (OpenDialogDelete)
+{
+    <CompanyDelete Title="Delete Company" Request="_selectedItems"
+                   EventAction="@DialogEvenAction"
+                   EventData="DialogEvenData"></CompanyDelete>
+}
+
+ *@

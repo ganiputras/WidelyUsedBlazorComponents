@@ -1,0 +1,78 @@
+﻿@using WebApp.Ui.Data
+@using WebApp.Ui.Data.Dto
+@using WebApp.Ui.Helpers
+
+@* step 1 *@
+@inject MasterDataService Data
+
+<div class="row">
+    <div class="col-md-4 mb-3">
+        <label class="form-label"> SELECT 2 SINGLE ENUM </label>
+        <p>@Model.CompanyType</p>
+
+        @* EventCallback is mandatory for enum types *@
+        <DropdownSelect @bind-Value="Model.CompanyType" EventDropdown="SetCompanyType"
+                        DataSource="DropdownCompanyType"
+                        EmptyText="false"
+                        Css="form-select form-select-sm" />
+        @* <ValidationMessage For="() => Model.CompanyType" class="text-danger" /> *@
+    </div>
+    <div class="col-md-4 mb-3">
+        <label class="form-label"> SELECT 2 SINGLE STRING </label>
+        <p>@Model.ParentId</p>
+        @* EventCallback is not mandatory for string types *@
+        <DropdownSelect @bind-Value="Model.ParentId"
+                        DataSource="DropdownCompany"
+                        EmptyText="true"
+                        Css="form-select form-select-sm" />
+        @* <ValidationMessage For="() => Model.ParentId" class="text-danger" /> *@
+    </div>
+    <div class="col-md-4 mb-3">
+        <label class="form-label"> SELECT 2 MULTIPLE  </label>
+        <p>@Model.Label</p>
+
+        @* EventCallback is not mandatory for string types, but you have to create a concatenated string *@
+        <DropdownMultiple @bind-Value="Model.LabelArray" EventDropdown="SetTypes"
+                          DataSource="DropdownLabel"
+                          EmptyText="false"
+                          Css="form-select form-select-sm  " />
+        @* <ValidationMessage For="() => Model.TypesArray" class="text-danger" /> *@
+    </div>
+</div>
+
+
+@* let's just say this is an edit page *@
+
+@code {
+    private CompanyDto Model { get; set; } = new();
+    
+    private Dictionary<string, string> DropdownLabel { get; set; } = new();
+    private Dictionary<string, string> DropdownCompany { get; set; } = new();
+    private Dictionary<string, string> DropdownCompanyType { get; set; } = new();
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        DropdownLabel = await Data.DropdownLabel();
+        DropdownCompany = await Data.DropdownCompany();
+        DropdownCompanyType = Data.DropdownCompanyType();
+        Model.CompanyType = CompanyType.HeadOffice;
+        Model.ParentId = "COMPANY2";
+        Model.Label = "Apple,Mango";
+        Model.LabelArray = Model.Label?.Split(',').ToArray();
+
+    }
+    private void SetCompanyType(string value)
+    {
+        Model.CompanyType = value.ToEnum<CompanyType>();
+        StateHasChanged();
+    }
+
+    private void SetTypes(string[] value)
+    {
+        Model.Label = string.Join(",", value);
+        Model.LabelArray = value;
+        StateHasChanged();
+    }
+}

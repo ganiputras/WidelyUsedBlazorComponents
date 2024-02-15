@@ -1,0 +1,45 @@
+﻿@using Blazored.Toast.Services
+
+<div class="modal fade show" id="myModal" style="display:block; background-color: rgba(10,10,10,.8);" aria-modal="true"  role="dialog">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header user-select-none">
+                <h4 class="modal-title">@Title</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @onclick="@OnActionCancel"></button>
+            </div>
+            @BodyContent
+        </div>
+    </div>
+</div>
+
+@code {
+
+    public string GenerateId = Guid.NewGuid().ToString();
+
+    [Parameter]
+    public string Title { get; set; }
+
+    [Parameter]
+    public dynamic Request { get; set; }
+
+    [Parameter] 
+    public RenderFragment BodyContent { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> EventAction { get; set; }
+
+    [Parameter]
+    public EventCallback<dynamic> EventData { get; set; }
+
+    [Inject]
+    protected internal IToastService Toast { get; set; }
+
+
+    protected internal Task OnActionCancel() => EventAction.InvokeAsync(false);
+    protected internal Task OnActionSubmit() => EventAction.InvokeAsync(true);
+    protected internal Task OnEvent(dynamic data) => EventData.InvokeAsync(data);
+   
+
+
+
+}

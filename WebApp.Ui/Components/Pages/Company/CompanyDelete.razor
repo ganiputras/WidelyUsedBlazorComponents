@@ -1,0 +1,65 @@
+﻿@* @using Application.Features.Company.Dto
+@using Application.Features.Company.Commands.Delete
+@inherits ModalDialog
+
+<ModalDialog EventAction="@EventAction" EventData="EventData" Title="@Title" Request="@Request">
+    <BodyContent>
+        <EditForm Model="Model" FormName="@GenerateId" OnValidSubmit="OnSubmit">
+            <div class="modal-body user-select-none">
+                <FluentValidationValidator ValidatorType="typeof(CompanyDeleteCommandValidation)" />
+
+                <div class="pb-5">
+                    <h3><i class="bi bi-info-square-fill"></i> Are you sure want to delete?</h3>
+                    <h6 class="px-4"> @TotalData data will be deleted, please agree to continue.</h6>
+                </div>
+                <div>
+                    <div class="form-check form-switch fs-5">
+                        <input @bind="IsAgree" class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckDefault">
+                        <label class="form-check-label" for="flexSwitchCheckDefault">I agree</label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer user-select-none">
+                <button type="button" class="btn btn-secondary" @onclick="@OnActionCancel">Cancel</button>
+                <button type="submit" class="btn btn-danger" disabled="@IsAgree.Equals(false)">Delete</button>
+            </div>
+        </EditForm>
+    </BodyContent>
+</ModalDialog>
+
+@code {
+
+
+    [SupplyParameterFromForm]
+    private CompanyDeleteCommand Model { get; set; } = new();
+
+    public int TotalData { get; set; }
+
+    [Inject] private ICurrentUserService CurrentUser { get; set; }
+    public bool IsAgree { get; set; }
+   
+    protected override Task OnInitializedAsync()
+    {
+        
+        var rq = (HashSet<CompanyDto>)Request;
+        TotalData = rq.Count;
+        var query = rq.Select(x => x.Id).ToList();
+        Model.Id.AddRange(query);
+        Model.TenantId = CurrentUser.TenantId;
+        return base.OnInitializedAsync();
+    }
+
+
+
+    private async Task OnSubmit()
+    {
+        var result = await Mediator.Send(Model);
+        if (result.Succeeded)
+        {
+            await OnActionSubmit();
+            await OnEvent(result.Data);
+            Toast.ShowSuccess($"{ConstantString.DeleteSuccess}");
+        }
+    }
+
+} *@
